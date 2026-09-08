@@ -193,17 +193,18 @@
   <table id="wipTable">
     <thead>
       <tr>
-        <th width="30%">ขั้นตอนการทำงาน / เลขที่ใบสั่ง</th>
-        <th width="10%" class="text-center">กำหนดเสร็จ</th>
-        <th width="12%" class="text-right">ยอดสั่ง (TARGET)</th>
-        <th width="12%" class="text-right">ผลิตได้ (PRODUCED)</th>
-        <th width="15%" class="text-right">ค้างผลิต (REMAINING)</th>
-        <th width="11%" class="text-center">อัปเดตล่าสุด</th>
+        <th width="28%">ขั้นตอนการทำงาน / เลขที่ใบสั่ง</th>
+        <th width="9%" class="text-center" style="color:var(--accent-pink)">กำหนดเสร็จ<br>(ใบสั่ง)</th>
+        <th width="9%" class="text-center" style="color:var(--accent-teal)">กำหนดเสร็จ<br>(ขั้นตอน)</th>
+        <th width="11%" class="text-right">ยอดสั่ง (TARGET)</th>
+        <th width="11%" class="text-right">ผลิตได้ (PRODUCED)</th>
+        <th width="12%" class="text-right">ค้างผลิต (REMAINING)</th>
+        <th width="10%" class="text-center">อัปเดตล่าสุด</th>
         <th width="10%" class="text-center">สถานะ</th>
       </tr>
     </thead>
     <tbody id="boardBody">
-      <tr><td colspan="7" class="loading-msg">WAITING FOR SYSTEM INITIALIZATION...</td></tr>
+      <tr><td colspan="8" class="loading-msg">WAITING FOR SYSTEM INITIALIZATION...</td></tr>
     </tbody>
   </table>
 </div>
@@ -243,12 +244,12 @@
     const statusEl = document.getElementById('statusText');
     const tbody = document.getElementById('boardBody');
     statusEl.innerText = "[ SYSTEM: DOWNLOADING & CALCULATING... ]";
-    tbody.innerHTML = '<tr><td colspan="7" class="loading-msg"><i class="fa-solid fa-spinner fa-spin"></i> ดึงข้อมูลและคำนวณยอดค้างสะสม...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading-msg"><i class="fa-solid fa-spinner fa-spin"></i> ดึงข้อมูลและคำนวณยอดค้างสะสม...</td></tr>';
 
     try {
-      // ดึง is_closed จากตาราง orders โดยตรง
+      // อัปเดต: ดึงคอลัมน์ end_date จากตาราง orders
       const [ordersRes, targetsRes, stepsRes, workRes, prodRes, orderStepsRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed`, { headers }), 
+        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed,end_date`, { headers }), 
         fetch(`${SUPABASE_URL}/targets?select=id_target,id_work,id_step`, { headers }),
         fetch(`${SUPABASE_URL}/production_steps?select=id_step,step_name`, { headers }),
         fetch(`${SUPABASE_URL}/work_items?select=id_work,work_code`, { headers }),
@@ -273,7 +274,7 @@
     } catch (error) {
       statusEl.innerText = `[ SYSTEM: ERROR - ${error.message} ]`;
       statusEl.style.color = "var(--accent-pink)";
-      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR (โปรดตรวจสอบว่าสร้างคอลัมน์ is_closed ที่ตาราง orders แล้ว)</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR (โปรดตรวจสอบตารางข้อมูล)</td></tr>`;
     }
   }
 
@@ -334,6 +335,7 @@
         let isDuplicate = stepMap[stepName].orders.some(o => o.id_order === order.id_order);
         if (isDuplicate) return;
 
+        // ดึงวันที่กำหนดเสร็จของขั้นตอน (Step Due Date)
         let stepDueDateStr = stepDateMap[`${order.id_order}_${target.id_step}`];
         let rawDueDate = stepDueDateStr ? new Date(stepDueDateStr) : null;
         let dueDateDisplay = "-";
@@ -345,6 +347,14 @@
           
           let diffTime = rawDueDate.getTime() - today.getTime();
           daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // อัปเดต: ดึงวันที่กำหนดเสร็จของใบสั่ง จากคอลัมน์ end_date ของตาราง orders
+        let orderDueDateStr = order.end_date; 
+        let orderDueDateDisplay = "-";
+        if (orderDueDateStr) {
+          let oDate = new Date(orderDueDateStr);
+          orderDueDateDisplay = `${oDate.getDate().toString().padStart(2,'0')}/${(oDate.getMonth()+1).toString().padStart(2,'0')}/${oDate.getFullYear()}`;
         }
 
         let key = `${order.id_order}_${target.id_target}`;
@@ -396,6 +406,7 @@
           last_update: lastUpdateStr,
           raw_due_date: rawDueDate,        
           due_date_display: dueDateDisplay,
+          order_due_date_display: orderDueDateDisplay,
           days_remaining: daysRemaining,
           is_closed: isClosed,
           close_type: closeType,
@@ -486,6 +497,7 @@
             <span class="step-col">[ ${step.step_name} ]</span>
           </td>
           <td></td>
+          <td></td>
           <td class="text-right step-total" style="color: var(--accent-blue);">${step.active_target_total.toLocaleString()}</td>
           <td class="text-right step-total" style="color: var(--accent-teal);">${step.active_produced_total.toLocaleString()}</td>
           <td class="text-right step-total" style="color: var(--accent-amber); font-weight: 900;">${step.active_remaining_total.toLocaleString()}</td>
@@ -529,7 +541,8 @@
               <span style="color:var(--accent-blue)">${order.order_no}</span> 
               <span style="color:var(--text-muted); margin-left: 6px;">(${order.work_code})</span>
             </td>
-            <td class="text-center" style="color: var(--accent-pink); font-weight: bold;">${order.due_date_display}</td>
+            <td class="text-center" style="color: var(--accent-pink); font-size: 13px;">${order.order_due_date_display}</td>
+            <td class="text-center" style="color: var(--accent-teal); font-weight: bold; font-size: 13px;">${order.due_date_display}</td>
             <td class="text-right">${order.target_qty.toLocaleString()}</td>
             <td class="text-right" style="color: var(--text-main);">${order.produced.toLocaleString()} <span style="font-size:10px; color:var(--text-muted)">(${order.progress_pct.toFixed(0)}%)</span></td>
             <td class="text-right" style="color: ${order.is_closed ? 'var(--text-muted)' : 'var(--accent-amber)'}; font-weight: bold;">
@@ -543,7 +556,7 @@
     });
 
     if (html === '') {
-      html = '<tr><td colspan="7" class="loading-msg" style="color:var(--text-muted)">ไม่มีข้อมูลค้างผลิต</td></tr>';
+      html = '<tr><td colspan="8" class="loading-msg" style="color:var(--text-muted)">ไม่มีข้อมูลค้างผลิต</td></tr>';
     }
 
     tbody.innerHTML = html;
