@@ -246,8 +246,9 @@
     tbody.innerHTML = '<tr><td colspan="7" class="loading-msg"><i class="fa-solid fa-spinner fa-spin"></i> ดึงข้อมูลและคำนวณยอดค้างสะสม...</td></tr>';
 
     try {
+      // ดึง is_closed จากตาราง orders โดยตรง
       const [ordersRes, targetsRes, stepsRes, workRes, prodRes, orderStepsRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed`, { headers }), // เพิ่ม is_closed
+        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed`, { headers }), 
         fetch(`${SUPABASE_URL}/targets?select=id_target,id_work,id_step`, { headers }),
         fetch(`${SUPABASE_URL}/production_steps?select=id_step,step_name`, { headers }),
         fetch(`${SUPABASE_URL}/work_items?select=id_work,work_code`, { headers }),
@@ -272,7 +273,7 @@
     } catch (error) {
       statusEl.innerText = `[ SYSTEM: ERROR - ${error.message} ]`;
       statusEl.style.color = "var(--accent-pink)";
-      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR (โปรดตรวจสอบว่าสร้างคอลัมน์ is_closed แล้ว)</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR (โปรดตรวจสอบว่าสร้างคอลัมน์ is_closed ที่ตาราง orders แล้ว)</td></tr>`;
     }
   }
 
@@ -427,9 +428,9 @@
     });
   }
 
-  // ฟังก์ชันส่งคำสั่งไปอัปเดตข้อมูลที่ Supabase 
+  // ฟังก์ชันยิง API อัปเดตไปยังตาราง orders
   async function toggleOrderManualClose(checkboxElement, orderId, currentStatus) {
-    checkboxElement.disabled = true; // ล็อคปุ่มกันกดซ้ำรัวๆ
+    checkboxElement.disabled = true; // ล็อคปุ่มกันกดรัว
     const newStatus = !currentStatus;
     
     try {
@@ -441,18 +442,18 @@
 
       if (!response.ok) throw new Error("อัปเดตฐานข้อมูลไม่สำเร็จ");
 
-      // อัปเดตข้อมูลในระบบหน้าเว็บให้ตรงกับฐานข้อมูลใหม่
+      // อัปเดตข้อมูลในระบบให้ตรงกับ Database
       let targetOrder = db.orders.find(o => String(o.id_order) === String(orderId));
       if (targetOrder) { targetOrder.is_closed = newStatus; }
 
-      // คำนวณยอดและวาดตารางใหม่
+      // คำนวณและวาดตารางใหม่
       processBacklogData();
       renderTable();
 
     } catch (error) {
       alert("เกิดข้อผิดพลาดในการซ่อนใบสั่ง: " + error.message);
       checkboxElement.disabled = false;
-      checkboxElement.checked = currentStatus; // ถ้าเน็ตพัง ให้ติ๊กกลับมาเหมือนเดิม
+      checkboxElement.checked = currentStatus; // ถ้าผิดพลาดให้เด้งกลับเหมือนเดิม
     }
   }
 
