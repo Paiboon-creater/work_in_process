@@ -66,8 +66,12 @@
       background: transparent; border: 1px solid; 
       padding: 6px 12px; border-radius: 6px;
       font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.2s;
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
     }
+    /* สไตล์ปุ่ม Home */
+    .btn-home { color: var(--accent-blue); border-color: var(--accent-blue); }
+    .btn-home:hover { background: var(--accent-blue); color: #fff; box-shadow: 0 0 10px rgba(29, 140, 248, 0.4); }
+    
     .btn-export { color: #10b981; border-color: #10b981; }
     .btn-export:hover { background: #10b981; color: #000; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
     .btn-print { color: #f8fafc; border-color: #f8fafc; }
@@ -180,6 +184,8 @@
         <input type="checkbox" id="showClosedSteps" onchange="renderTable()">
         <span>แสดงประวัติงานที่ปิดแล้ว</span>
       </label>
+      <!-- เพิ่มปุ่ม HOME ตรงนี้ครับ -->
+      <a href="https://paiboon-creater.github.io/Data_Information_Jaguar_productions/" class="btn btn-home" title="กลับหน้าหลัก"><i class="fa-solid fa-house"></i> HOME</a>
       <button class="btn btn-export" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
       <button class="btn btn-print" onclick="prepareAndPrint()"><i class="fa-solid fa-print"></i> PRINT</button>
       <button class="btn btn-refresh" onclick="fetchAndCalculate()"><i class="fa-solid fa-rotate"></i></button>
@@ -355,7 +361,7 @@
         let progressPct = orderQty > 0 ? (produced / orderQty) * 100 : 0;
         let closeDiffDays = 0;
 
-        // --- ลอจิกปิดออเดอร์ใหม่: ถ้ายอดค้างเป็น 0 ปิดทันที ไม่ต้องรอ 10 วัน ---
+        // ถ้ายอดค้างเป็น 0 ปิดทันที
         if (remaining <= 0) {
           isAutoClosed = true;
         } else if (progressPct >= 95 && prodInfo.lastUpdate) {
@@ -365,7 +371,6 @@
           closeDiffDays = Math.floor(closeDiffTime / (1000 * 60 * 60 * 24));
           if (closeDiffDays >= 10) { isAutoClosed = true; }
         }
-        // -----------------------------------------------------------
 
         let isClosed = isManualClosed || isAutoClosed;
         let closeType = isManualClosed ? 'MANUAL' : (isAutoClosed ? 'AUTO' : 'ACTIVE');
