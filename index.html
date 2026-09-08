@@ -19,6 +19,7 @@
       --accent-blue: #1d8cf8;
       --accent-teal: #00f2c3;
       --accent-pink: #e14eca;
+      --accent-purple: #c084fc; /* เพิ่มสีปุ่มคู่มือ */
       
       --row-hover: #2e3046;
       --row-child: #202133;
@@ -71,6 +72,10 @@
     .btn-home { color: var(--accent-blue); border-color: var(--accent-blue); }
     .btn-home:hover { background: var(--accent-blue); color: #fff; box-shadow: 0 0 10px rgba(29, 140, 248, 0.4); }
     
+    /* ปุ่ม MANUAL ใหม่ */
+    .btn-manual { color: var(--accent-purple); border-color: var(--accent-purple); }
+    .btn-manual:hover { background: var(--accent-purple); color: #fff; box-shadow: 0 0 10px rgba(192, 132, 252, 0.4); }
+    
     .btn-export { color: #10b981; border-color: #10b981; }
     .btn-export:hover { background: #10b981; color: #000; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
     .btn-print { color: #f8fafc; border-color: #f8fafc; }
@@ -85,7 +90,6 @@
       background-color: #1a1a2e; color: var(--text-muted); 
       border-bottom: 2px solid var(--border-dark);
       padding: 12px 10px; font-weight: bold; font-size: 12px;
-      /* คำสั่งตรึงหัวตาราง */
       position: sticky;
       top: 0;
       z-index: 10;
@@ -143,7 +147,7 @@
       table { width: 100%; border-collapse: collapse; margin-top: 20px; }
       th { 
         background-color: #f2f2f2 !important; color: #000; border: 1px solid #000; font-size: 11pt; padding: 8px; -webkit-print-color-adjust: exact; 
-        position: static; /* ยกเลิกการตรึงหัวตารางตอนพิมพ์กระดาษ */
+        position: static; 
       }
       td { border: 1px solid #666; padding: 6px 8px; font-size: 10pt; color: #000 !important; }
       
@@ -192,6 +196,10 @@
         <span>แสดงประวัติงานที่ปิดแล้ว</span>
       </label>
       <a href="https://paiboon-creater.github.io/Data_Information_Jaguar_productions/" class="btn btn-home" title="กลับหน้าหลัก"><i class="fa-solid fa-house"></i> HOME</a>
+      
+      <!-- ปุ่ม MANUAL เพิ่มใหม่ตรงนี้ครับ -->
+      <a href="manual.html" target="_blank" class="btn btn-manual" title="คู่มือการใช้งานระบบ"><i class="fa-solid fa-book"></i> MANUAL</a>
+      
       <button class="btn btn-export" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
       <button class="btn btn-print" onclick="prepareAndPrint()"><i class="fa-solid fa-print"></i> PRINT</button>
       <button class="btn btn-refresh" onclick="fetchAndCalculate()"><i class="fa-solid fa-rotate"></i></button>
@@ -229,7 +237,6 @@
   let db = { orders: [], targets: [], steps: [], workItems: [], production: [], orderSteps: [] };
   let processedData = []; 
   
-  // ลำดับขั้นตอนตามสายพานการผลิตจริง
   const customStepOrder = [
     "ตัดเหรียญมือ",
     "ตัดเหรียญออโต",
