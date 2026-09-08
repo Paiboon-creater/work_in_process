@@ -80,10 +80,15 @@
 
     /* TABLE STYLES */
     table { width: 100%; border-collapse: collapse; text-align: left; }
+    
     th {
       background-color: #1a1a2e; color: var(--text-muted); 
       border-bottom: 2px solid var(--border-dark);
       padding: 12px 10px; font-weight: bold; font-size: 12px;
+      /* คำสั่งตรึงหัวตาราง */
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     
     .parent-row {
@@ -136,7 +141,10 @@
       .closed-row { display: none !important; } 
       
       table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-      th { background-color: #f2f2f2 !important; color: #000; border: 1px solid #000; font-size: 11pt; padding: 8px; -webkit-print-color-adjust: exact; }
+      th { 
+        background-color: #f2f2f2 !important; color: #000; border: 1px solid #000; font-size: 11pt; padding: 8px; -webkit-print-color-adjust: exact; 
+        position: static; /* ยกเลิกการตรึงหัวตารางตอนพิมพ์กระดาษ */
+      }
       td { border: 1px solid #666; padding: 6px 8px; font-size: 10pt; color: #000 !important; }
       
       .parent-row td { background-color: #e6e6e6 !important; font-weight: bold; border-top: 2px solid #000; -webkit-print-color-adjust: exact;}
@@ -247,7 +255,6 @@
     tbody.innerHTML = '<tr><td colspan="8" class="loading-msg"><i class="fa-solid fa-spinner fa-spin"></i> ดึงข้อมูลและคำนวณยอดค้างสะสม...</td></tr>';
 
     try {
-      // อัปเดต: ดึงคอลัมน์ end_date จากตาราง orders
       const [ordersRes, targetsRes, stepsRes, workRes, prodRes, orderStepsRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed,end_date`, { headers }), 
         fetch(`${SUPABASE_URL}/targets?select=id_target,id_work,id_step`, { headers }),
@@ -335,7 +342,6 @@
         let isDuplicate = stepMap[stepName].orders.some(o => o.id_order === order.id_order);
         if (isDuplicate) return;
 
-        // ดึงวันที่กำหนดเสร็จของขั้นตอน (Step Due Date)
         let stepDueDateStr = stepDateMap[`${order.id_order}_${target.id_step}`];
         let rawDueDate = stepDueDateStr ? new Date(stepDueDateStr) : null;
         let dueDateDisplay = "-";
@@ -349,7 +355,6 @@
           daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        // อัปเดต: ดึงวันที่กำหนดเสร็จของใบสั่ง จากคอลัมน์ end_date ของตาราง orders
         let orderDueDateStr = order.end_date; 
         let orderDueDateDisplay = "-";
         if (orderDueDateStr) {
@@ -364,13 +369,11 @@
         let remaining = orderQty - produced;
         if (remaining < 0) remaining = 0; 
 
-        // ดึงสถานะการกดปิดจาก Database โดยตรง
         let isManualClosed = order.is_closed === true;
         let isAutoClosed = false;
         let progressPct = orderQty > 0 ? (produced / orderQty) * 100 : 0;
         let closeDiffDays = 0;
 
-        // ถ้ายอดค้างเป็น 0 ปิดทันที
         if (remaining <= 0) {
           isAutoClosed = true;
         } else if (progressPct >= 95 && prodInfo.lastUpdate) {
@@ -418,7 +421,6 @@
 
     processedData = Object.values(stepMap);
     
-    // เรียงลำดับขั้นตอนการทำงานตามอาร์เรย์ที่ตั้งไว้
     processedData.sort((a, b) => {
       let indexA = customStepOrder.indexOf(a.step_name.trim());
       let indexB = customStepOrder.indexOf(b.step_name.trim());
@@ -428,7 +430,6 @@
       return a.step_name.localeCompare(b.step_name, 'th');
     });
     
-    // เรียงออเดอร์ในขั้นตอน ตาม Due Date น้อยไปมาก
     processedData.forEach(step => {
       step.orders.sort((a, b) => {
         if (a.raw_due_date && b.raw_due_date) return a.raw_due_date.getTime() - b.raw_due_date.getTime();
@@ -439,9 +440,8 @@
     });
   }
 
-  // ฟังก์ชันยิง API อัปเดตไปยังตาราง orders
   async function toggleOrderManualClose(checkboxElement, orderId, currentStatus) {
-    checkboxElement.disabled = true; // ล็อคปุ่มกันกดรัว
+    checkboxElement.disabled = true;
     const newStatus = !currentStatus;
     
     try {
@@ -453,18 +453,16 @@
 
       if (!response.ok) throw new Error("อัปเดตฐานข้อมูลไม่สำเร็จ");
 
-      // อัปเดตข้อมูลในระบบให้ตรงกับ Database
       let targetOrder = db.orders.find(o => String(o.id_order) === String(orderId));
       if (targetOrder) { targetOrder.is_closed = newStatus; }
 
-      // คำนวณและวาดตารางใหม่
       processBacklogData();
       renderTable();
 
     } catch (error) {
       alert("เกิดข้อผิดพลาดในการซ่อนใบสั่ง: " + error.message);
       checkboxElement.disabled = false;
-      checkboxElement.checked = currentStatus; // ถ้าผิดพลาดให้เด้งกลับเหมือนเดิม
+      checkboxElement.checked = currentStatus; 
     }
   }
 
@@ -479,7 +477,6 @@
 
     processedData.forEach((step, index) => {
       
-      // ถ้ายอดค้างเป็น 0 และไม่ได้ดูประวัติงานปิด ให้ซ่อนขั้นตอนนี้ไปเลย
       if (!showClosed && step.active_remaining_total <= 0) return;
 
       let visibleOrders = step.orders.filter(o => showClosed || !o.is_closed);
