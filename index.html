@@ -68,7 +68,6 @@
       font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.2s;
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
     }
-    /* สไตล์ปุ่ม Home */
     .btn-home { color: var(--accent-blue); border-color: var(--accent-blue); }
     .btn-home:hover { background: var(--accent-blue); color: #fff; box-shadow: 0 0 10px rgba(29, 140, 248, 0.4); }
     
@@ -184,7 +183,6 @@
         <input type="checkbox" id="showClosedSteps" onchange="renderTable()">
         <span>แสดงประวัติงานที่ปิดแล้ว</span>
       </label>
-      <!-- เพิ่มปุ่ม HOME ตรงนี้ครับ -->
       <a href="https://paiboon-creater.github.io/Data_Information_Jaguar_productions/" class="btn btn-home" title="กลับหน้าหลัก"><i class="fa-solid fa-house"></i> HOME</a>
       <button class="btn btn-export" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
       <button class="btn btn-print" onclick="prepareAndPrint()"><i class="fa-solid fa-print"></i> PRINT</button>
@@ -221,8 +219,7 @@
 
   let db = { orders: [], targets: [], steps: [], workItems: [], production: [], orderSteps: [] };
   let processedData = []; 
-  let manualClosedOrders = JSON.parse(localStorage.getItem('jaguarManualClosedOrders') || '[]');
-
+  
   // ลำดับขั้นตอนตามสายพานการผลิตจริง
   const customStepOrder = [
     "ตัดเหรียญมือ",
@@ -250,7 +247,7 @@
 
     try {
       const [ordersRes, targetsRes, stepsRes, workRes, prodRes, orderStepsRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity`, { headers }),
+        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity,is_closed`, { headers }), // เพิ่ม is_closed
         fetch(`${SUPABASE_URL}/targets?select=id_target,id_work,id_step`, { headers }),
         fetch(`${SUPABASE_URL}/production_steps?select=id_step,step_name`, { headers }),
         fetch(`${SUPABASE_URL}/work_items?select=id_work,work_code`, { headers }),
@@ -275,7 +272,7 @@
     } catch (error) {
       statusEl.innerText = `[ SYSTEM: ERROR - ${error.message} ]`;
       statusEl.style.color = "var(--accent-pink)";
-      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR (โปรดตรวจสอบว่าสร้างคอลัมน์ is_closed แล้ว)</td></tr>`;
     }
   }
 
@@ -356,7 +353,8 @@
         let remaining = orderQty - produced;
         if (remaining < 0) remaining = 0; 
 
-        let isManualClosed = manualClosedOrders.includes(String(order.id_order));
+        // ดึงสถานะการกดปิดจาก Database โดยตรง
+        let isManualClosed = order.is_closed === true;
         let isAutoClosed = false;
         let progressPct = orderQty > 0 ? (produced / orderQty) * 100 : 0;
         let closeDiffDays = 0;
@@ -400,7 +398,8 @@
           days_remaining: daysRemaining,
           is_closed: isClosed,
           close_type: closeType,
-          progress_pct: progressPct
+          progress_pct: progressPct,
+          is_manual_closed: isManualClosed
         });
       });
     });
@@ -411,38 +410,50 @@
     processedData.sort((a, b) => {
       let indexA = customStepOrder.indexOf(a.step_name.trim());
       let indexB = customStepOrder.indexOf(b.step_name.trim());
-
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
-      
       return a.step_name.localeCompare(b.step_name, 'th');
     });
     
     // เรียงออเดอร์ในขั้นตอน ตาม Due Date น้อยไปมาก
     processedData.forEach(step => {
       step.orders.sort((a, b) => {
-        if (a.raw_due_date && b.raw_due_date) {
-          return a.raw_due_date.getTime() - b.raw_due_date.getTime();
-        } else if (a.raw_due_date) { return -1; }
-        else if (b.raw_due_date) { return 1; }
+        if (a.raw_due_date && b.raw_due_date) return a.raw_due_date.getTime() - b.raw_due_date.getTime();
+        else if (a.raw_due_date) return -1; 
+        else if (b.raw_due_date) return 1; 
         return String(a.order_no).localeCompare(String(b.order_no), 'th', {numeric: true});
       });
     });
   }
 
-  function toggleOrderManualClose(orderId) {
-    let orderIdStr = String(orderId);
-    if (manualClosedOrders.includes(orderIdStr)) {
-      manualClosedOrders = manualClosedOrders.filter(id => id !== orderIdStr);
-    } else {
-      manualClosedOrders.push(orderIdStr);
+  // ฟังก์ชันส่งคำสั่งไปอัปเดตข้อมูลที่ Supabase 
+  async function toggleOrderManualClose(checkboxElement, orderId, currentStatus) {
+    checkboxElement.disabled = true; // ล็อคปุ่มกันกดซ้ำรัวๆ
+    const newStatus = !currentStatus;
+    
+    try {
+      const response = await fetch(`${SUPABASE_URL}/orders?id_order=eq.${orderId}`, {
+        method: 'PATCH',
+        headers: headers,
+        body: JSON.stringify({ is_closed: newStatus })
+      });
+
+      if (!response.ok) throw new Error("อัปเดตฐานข้อมูลไม่สำเร็จ");
+
+      // อัปเดตข้อมูลในระบบหน้าเว็บให้ตรงกับฐานข้อมูลใหม่
+      let targetOrder = db.orders.find(o => String(o.id_order) === String(orderId));
+      if (targetOrder) { targetOrder.is_closed = newStatus; }
+
+      // คำนวณยอดและวาดตารางใหม่
+      processBacklogData();
+      renderTable();
+
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการซ่อนใบสั่ง: " + error.message);
+      checkboxElement.disabled = false;
+      checkboxElement.checked = currentStatus; // ถ้าเน็ตพัง ให้ติ๊กกลับมาเหมือนเดิม
     }
-    localStorage.setItem('jaguarManualClosedOrders', JSON.stringify(manualClosedOrders));
-    processBacklogData();
-    renderTable();
   }
 
   function renderTable() {
@@ -506,14 +517,14 @@
         }
 
         let remainingDisplay = order.is_closed ? `<s>${order.remaining.toLocaleString()}</s>` : order.remaining.toLocaleString();
-        let isChecked = manualClosedOrders.includes(String(order.id_order)) ? 'checked' : '';
+        let isChecked = order.is_manual_closed ? 'checked' : '';
         let rowClass = order.is_closed ? `child-row child-of-${index} closed-row` : `child-row child-of-${index}`;
 
         html += `
           <tr class="${rowClass}">
             <td class="nowrap-col" style="padding-left: 38px;">
               <input type="checkbox" class="close-checkbox no-print" title="ติ๊กเพื่อปิด/ซ่อน ใบสั่งนี้ทุกขั้นตอน" 
-                     ${isChecked} onchange="toggleOrderManualClose('${order.id_order}')">
+                     ${isChecked} onchange="toggleOrderManualClose(this, '${order.id_order}', ${order.is_manual_closed})">
               <span style="color:var(--accent-blue)">${order.order_no}</span> 
               <span style="color:var(--text-muted); margin-left: 6px;">(${order.work_code})</span>
             </td>
