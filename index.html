@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>JAGUAR // WIP & BACKLOG BOARD</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* THEME: DEEP SLATE & AMBER */
+    :root {
+      --bg-main: #1e1e2f;
+      --panel-bg: #27293d;
+      --border-dark: #3b3b54;
+      --text-main: #e4e4e4;
+      --text-muted: #9a9a9a;
+      
+      --accent-amber: #ff8a76;
+      --accent-blue: #1d8cf8;
+      --accent-teal: #00f2c3;
+      --accent-pink: #e14eca;
+      
+      --row-hover: #2e3046;
+      --row-child: #202133;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace, 'Sarabun', sans-serif;
+      background-color: var(--bg-main); color: var(--text-main);
+      margin: 0; padding: 15px; font-size: 14px;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    .app-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-bottom: 2px solid var(--border-dark); padding-bottom: 10px; margin-bottom: 15px;
+    }
+    .app-title { font-size: 22px; font-weight: bold; color: var(--accent-amber); margin: 0; letter-spacing: 1px; }
+    .app-subtitle { color: var(--text-muted); font-size: 12px; margin-top: 5px; }
+
+    /* TOOLBAR & INLINE SUMMARY */
+    .toolbar {
+      background: var(--panel-bg); border: 1px solid var(--border-dark);
+      padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    
+    .summary-inline {
+      font-size: 14px; font-weight: bold;
+    }
+    .summary-inline .hl { color: var(--accent-blue); margin: 0 10px; }
+    .summary-inline .hl-warn { color: var(--accent-amber); margin: 0 10px; font-size: 16px;}
+    
+    .action-group {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .toggle-wrapper { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .toggle-wrapper input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-amber); }
+    .toggle-wrapper span { color: var(--text-main); font-family: 'Sarabun', sans-serif; font-size: 13px;}
+
+    .btn {
+      background: transparent; border: 1px solid; 
+      padding: 6px 12px; border-radius: 6px;
+      font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-export { color: #10b981; border-color: #10b981; }
+    .btn-export:hover { background: #10b981; color: #000; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+    .btn-print { color: #f8fafc; border-color: #f8fafc; }
+    .btn-print:hover { background: #f8fafc; color: #000; box-shadow: 0 0 10px rgba(248, 250, 252, 0.4); }
+    .btn-refresh { color: var(--accent-teal); border-color: var(--accent-teal); }
+    .btn-refresh:hover { background: var(--accent-teal); color: #000; box-shadow: 0 0 10px rgba(0, 242, 195, 0.4); }
+
+    /* TABLE STYLES */
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+      background-color: #1a1a2e; color: var(--text-muted); 
+      border-bottom: 2px solid var(--border-dark);
+      padding: 12px 10px; font-weight: bold; font-size: 12px;
+    }
+    
+    .parent-row {
+      background-color: var(--panel-bg); cursor: pointer; transition: background 0.2s;
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .parent-row:hover { background-color: var(--row-hover); }
+    .parent-row td { padding: 14px 10px; font-weight: bold; font-size: 15px; }
+    .step-col { color: var(--accent-teal); font-size: 16px; }
+    .step-total { font-size: 16px; }
+    
+    .child-row {
+      background-color: var(--row-child); display: none; 
+      border-bottom: 1px dashed var(--border-dark);
+    }
+    .child-row.show { display: table-row; }
+    .child-row td { padding: 10px; font-size: 13px; color: #d4d4d8; }
+    
+    .nowrap-col { white-space: nowrap; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    .close-checkbox {
+      width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent-pink);
+      vertical-align: middle; margin-right: 8px;
+    }
+    .closed-row td { opacity: 0.5; }
+    .closed-row td s { color: var(--text-muted); }
+
+    /* BADGES (STATUS) */
+    .badge { padding: 5px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; white-space: nowrap; display: inline-block; }
+    .badge-closed { background: rgba(225, 78, 202, 0.15); color: var(--accent-pink); border: 1px solid var(--accent-pink); }
+    .badge-auto { background: rgba(255, 138, 118, 0.15); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    
+    .badge-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+    .badge-overdue { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+    .badge-today { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
+    .badge-none { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid #3b82f6; }
+
+    .expand-icon { width: 20px; display: inline-block; text-align: center; color: var(--text-muted); transition: transform 0.2s; }
+    .parent-row.expanded .expand-icon { transform: rotate(90deg); color: var(--accent-teal); }
+    .loading-msg { text-align: center; padding: 40px; color: var(--accent-amber); letter-spacing: 2px; }
+
+    /* PRINT STYLES */
+    .print-header { display: none; }
+    @media print {
+      body { background-color: #ffffff; color: #000000; font-family: 'Sarabun', sans-serif; font-size: 12pt; padding: 0; }
+      .no-print, .app-header, .toolbar, .expand-icon, .close-checkbox { display: none !important; }
+      .child-row { display: table-row !important; }
+      .closed-row { display: none !important; } 
+      
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th { background-color: #f2f2f2 !important; color: #000; border: 1px solid #000; font-size: 11pt; padding: 8px; -webkit-print-color-adjust: exact; }
+      td { border: 1px solid #666; padding: 6px 8px; font-size: 10pt; color: #000 !important; }
+      
+      .parent-row td { background-color: #e6e6e6 !important; font-weight: bold; border-top: 2px solid #000; -webkit-print-color-adjust: exact;}
+      .child-row td { border-bottom: 1px dotted #999; }
+      
+      .print-header { display: block; text-align: center; margin-bottom: 20px; border-bottom: 3px double #000; padding-bottom: 15px; }
+      .print-header h1 { margin: 0 0 5px 0; font-size: 20pt; letter-spacing: 1px; }
+      .print-header p { margin: 0; font-size: 11pt; color: #333; }
+      .print-summary-box { display: flex; justify-content: space-between; margin-top: 10px; font-weight: bold; font-size: 12pt; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div class="print-header">
+    <h1>STATEMENT OF PRODUCTION (WIP)</h1>
+    <p>รายงานตรวจสอบยอดชิ้นงานค้างผลิต (Backlog) ประจำวัน</p>
+    <div class="print-summary-box">
+      <span>พิมพ์เมื่อวันที่: <span id="printDateStr"></span></span>
+      <span>ยอดค้างรวมทั้งสิ้น: <span id="printTotalRemaining">0</span> ชิ้น</span>
+    </div>
+  </div>
+
+  <div class="app-header no-print">
+    <div>
+      <h1 class="app-title"><i class="fa-solid fa-layer-group"></i> PRODUCTION WIP & BACKLOG</h1>
+      <div class="app-subtitle">กระดานติดตามยอดค้างผลิต (ซ่อนออเดอร์ที่ยอดค้างเป็น 0 อัตโนมัติ)</div>
+    </div>
+    <div id="statusText" style="color: var(--accent-teal); font-size: 12px; font-weight: bold;">[ SYSTEM: STANDBY ]</div>
+  </div>
+
+  <div class="toolbar no-print">
+    <div class="summary-inline">
+      <i class="fa-solid fa-chart-pie" style="color: var(--text-muted);"></i> ภาพรวมระบบ:
+      <span class="hl">ค้าง <span id="sumActiveSteps">0</span> ขั้นตอน</span> |
+      <span class="hl"><span id="sumActiveOrders">0</span> ใบสั่งงาน</span> |
+      <span class="hl-warn">ยอดรอผลิต <span id="sumRemainingWIP">0</span> ชิ้น</span>
+    </div>
+    
+    <div class="action-group">
+      <label class="toggle-wrapper" title="แสดงใบสั่งที่ถูกตัดจบไปแล้ว">
+        <input type="checkbox" id="showClosedSteps" onchange="renderTable()">
+        <span>แสดงประวัติงานที่ปิดแล้ว</span>
+      </label>
+      <button class="btn btn-export" onclick="exportToExcel()"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
+      <button class="btn btn-print" onclick="prepareAndPrint()"><i class="fa-solid fa-print"></i> PRINT</button>
+      <button class="btn btn-refresh" onclick="fetchAndCalculate()"><i class="fa-solid fa-rotate"></i></button>
+    </div>
+  </div>
+
+  <table id="wipTable">
+    <thead>
+      <tr>
+        <th width="30%">ขั้นตอนการทำงาน / เลขที่ใบสั่ง</th>
+        <th width="10%" class="text-center">กำหนดเสร็จ</th>
+        <th width="12%" class="text-right">ยอดสั่ง (TARGET)</th>
+        <th width="12%" class="text-right">ผลิตได้ (PRODUCED)</th>
+        <th width="15%" class="text-right">ค้างผลิต (REMAINING)</th>
+        <th width="11%" class="text-center">อัปเดตล่าสุด</th>
+        <th width="10%" class="text-center">สถานะ</th>
+      </tr>
+    </thead>
+    <tbody id="boardBody">
+      <tr><td colspan="7" class="loading-msg">WAITING FOR SYSTEM INITIALIZATION...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://siiiifesdjuunwmwozfb.supabase.co/rest/v1";
+  const SUPABASE_KEY = "sb_publishable_ohToE8Z_Fzo87uBtzdPDIg_cqHCi3HT";
+  const headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json"
+  };
+
+  let db = { orders: [], targets: [], steps: [], workItems: [], production: [], orderSteps: [] };
+  let processedData = []; 
+  let manualClosedOrders = JSON.parse(localStorage.getItem('jaguarManualClosedOrders') || '[]');
+
+  // ลำดับขั้นตอนตามสายพานการผลิตจริง
+  const customStepOrder = [
+    "ตัดเหรียญมือ",
+    "ตัดเหรียญออโต",
+    "ตัดมุม",
+    "รีดใบ",
+    "ตัดใบ",
+    "เจาะซี่",
+    "ตีตรา",
+    "ตีลาย",
+    "ขึ้นรูป"
+  ];
+
+  window.onload = async function() {
+    const now = new Date();
+    document.getElementById('printDateStr').innerText = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    await fetchAndCalculate();
+  };
+
+  async function fetchAndCalculate() {
+    const statusEl = document.getElementById('statusText');
+    const tbody = document.getElementById('boardBody');
+    statusEl.innerText = "[ SYSTEM: DOWNLOADING & CALCULATING... ]";
+    tbody.innerHTML = '<tr><td colspan="7" class="loading-msg"><i class="fa-solid fa-spinner fa-spin"></i> ดึงข้อมูลและคำนวณยอดค้างสะสม...</td></tr>';
+
+    try {
+      const [ordersRes, targetsRes, stepsRes, workRes, prodRes, orderStepsRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/orders?select=id_order,order_no,id_work,quantity`, { headers }),
+        fetch(`${SUPABASE_URL}/targets?select=id_target,id_work,id_step`, { headers }),
+        fetch(`${SUPABASE_URL}/production_steps?select=id_step,step_name`, { headers }),
+        fetch(`${SUPABASE_URL}/work_items?select=id_work,work_code`, { headers }),
+        fetch(`${SUPABASE_URL}/daily_production?select=id_order,id_target,produced_amount,record_date`, { headers }),
+        fetch(`${SUPABASE_URL}/order_steps?select=id_order,id_step,end_date`, { headers })
+      ]);
+
+      if (!ordersRes.ok) throw new Error("Connection Failed");
+
+      db.orders = await ordersRes.json();
+      db.targets = await targetsRes.json();
+      db.steps = await stepsRes.json();
+      db.workItems = await workRes.json();
+      db.production = await prodRes.json();
+      db.orderSteps = await orderStepsRes.json();
+
+      processBacklogData();
+      renderTable();
+
+      statusEl.innerText = "[ SYSTEM: ONLINE / DATA UPDATED ]";
+      statusEl.style.color = "var(--accent-teal)";
+    } catch (error) {
+      statusEl.innerText = `[ SYSTEM: ERROR - ${error.message} ]`;
+      statusEl.style.color = "var(--accent-pink)";
+      tbody.innerHTML = `<tr><td colspan="7" class="loading-msg" style="color:var(--accent-pink)">CONNECTION ERROR</td></tr>`;
+    }
+  }
+
+  function processBacklogData() {
+    processedData = [];
+    const today = new Date();
+    today.setHours(0,0,0,0); 
+
+    let prodMap = {}; 
+    db.production.forEach(log => {
+      let key = `${log.id_order}_${log.id_target}`;
+      if (!prodMap[key]) {
+        prodMap[key] = { totalProduced: 0, lastUpdate: null };
+      }
+      prodMap[key].totalProduced += (log.produced_amount || 0);
+      
+      if (log.record_date) {
+        let recDate = new Date(log.record_date);
+        if (!prodMap[key].lastUpdate || recDate > prodMap[key].lastUpdate) {
+          prodMap[key].lastUpdate = recDate;
+        }
+      }
+    });
+
+    let stepDateMap = {};
+    db.orderSteps.forEach(os => {
+      if (os.end_date) {
+        stepDateMap[`${os.id_order}_${os.id_step}`] = os.end_date;
+      }
+    });
+
+    let stepMap = {};
+
+    db.orders.forEach(order => {
+      let orderQty = parseInt(order.quantity) || 0;
+      let orderWorkId = order.id_work;
+      
+      let workObj = db.workItems.find(w => String(w.id_work) === String(orderWorkId));
+      let workCode = workObj ? workObj.work_code : "-";
+
+      let relatedTargets = db.targets.filter(t => String(t.id_work) === String(orderWorkId));
+      
+      relatedTargets.forEach(target => {
+        let stepObj = db.steps.find(s => String(s.id_step) === String(target.id_step));
+        let stepName = stepObj ? stepObj.step_name : `STEP ID: ${target.id_step}`;
+        
+        if (!stepMap[stepName]) {
+          stepMap[stepName] = {
+            step_name: stepName,
+            active_target_total: 0,
+            active_produced_total: 0,
+            active_remaining_total: 0,
+            active_orders_count: 0,
+            orders: []
+          };
+        }
+
+        let isDuplicate = stepMap[stepName].orders.some(o => o.id_order === order.id_order);
+        if (isDuplicate) return;
+
+        let stepDueDateStr = stepDateMap[`${order.id_order}_${target.id_step}`];
+        let rawDueDate = stepDueDateStr ? new Date(stepDueDateStr) : null;
+        let dueDateDisplay = "-";
+        let daysRemaining = null;
+
+        if (rawDueDate) {
+          rawDueDate.setHours(0,0,0,0);
+          dueDateDisplay = `${rawDueDate.getDate().toString().padStart(2,'0')}/${(rawDueDate.getMonth()+1).toString().padStart(2,'0')}/${rawDueDate.getFullYear()}`;
+          
+          let diffTime = rawDueDate.getTime() - today.getTime();
+          daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        let key = `${order.id_order}_${target.id_target}`;
+        let prodInfo = prodMap[key] || { totalProduced: 0, lastUpdate: null };
+        
+        let produced = prodInfo.totalProduced;
+        let remaining = orderQty - produced;
+        if (remaining < 0) remaining = 0; 
+
+        let isManualClosed = manualClosedOrders.includes(String(order.id_order));
+        let isAutoClosed = false;
+        let progressPct = orderQty > 0 ? (produced / orderQty) * 100 : 0;
+        let closeDiffDays = 0;
+
+        // --- ลอจิกปิดออเดอร์ใหม่: ถ้ายอดค้างเป็น 0 ปิดทันที ไม่ต้องรอ 10 วัน ---
+        if (remaining <= 0) {
+          isAutoClosed = true;
+        } else if (progressPct >= 95 && prodInfo.lastUpdate) {
+          let lastUpdateForClose = new Date(prodInfo.lastUpdate);
+          lastUpdateForClose.setHours(0,0,0,0);
+          const closeDiffTime = today.getTime() - lastUpdateForClose.getTime();
+          closeDiffDays = Math.floor(closeDiffTime / (1000 * 60 * 60 * 24));
+          if (closeDiffDays >= 10) { isAutoClosed = true; }
+        }
+        // -----------------------------------------------------------
+
+        let isClosed = isManualClosed || isAutoClosed;
+        let closeType = isManualClosed ? 'MANUAL' : (isAutoClosed ? 'AUTO' : 'ACTIVE');
+
+        if (!isClosed) {
+          stepMap[stepName].active_target_total += orderQty;
+          stepMap[stepName].active_produced_total += produced;
+          stepMap[stepName].active_remaining_total += remaining;
+          stepMap[stepName].active_orders_count++;
+        }
+
+        let lastUpdateStr = "-";
+        if (prodInfo.lastUpdate) {
+          lastUpdateStr = `${prodInfo.lastUpdate.getDate().toString().padStart(2,'0')}/${(prodInfo.lastUpdate.getMonth()+1).toString().padStart(2,'0')}/${prodInfo.lastUpdate.getFullYear()}`;
+        }
+
+        stepMap[stepName].orders.push({
+          id_order: order.id_order,
+          order_no: order.order_no,
+          work_code: workCode,
+          target_qty: orderQty,
+          produced: produced,
+          remaining: remaining,
+          last_update: lastUpdateStr,
+          raw_due_date: rawDueDate,        
+          due_date_display: dueDateDisplay,
+          days_remaining: daysRemaining,
+          is_closed: isClosed,
+          close_type: closeType,
+          progress_pct: progressPct
+        });
+      });
+    });
+
+    processedData = Object.values(stepMap);
+    
+    // เรียงลำดับขั้นตอนการทำงานตามอาร์เรย์ที่ตั้งไว้
+    processedData.sort((a, b) => {
+      let indexA = customStepOrder.indexOf(a.step_name.trim());
+      let indexB = customStepOrder.indexOf(b.step_name.trim());
+
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      return a.step_name.localeCompare(b.step_name, 'th');
+    });
+    
+    // เรียงออเดอร์ในขั้นตอน ตาม Due Date น้อยไปมาก
+    processedData.forEach(step => {
+      step.orders.sort((a, b) => {
+        if (a.raw_due_date && b.raw_due_date) {
+          return a.raw_due_date.getTime() - b.raw_due_date.getTime();
+        } else if (a.raw_due_date) { return -1; }
+        else if (b.raw_due_date) { return 1; }
+        return String(a.order_no).localeCompare(String(b.order_no), 'th', {numeric: true});
+      });
+    });
+  }
+
+  function toggleOrderManualClose(orderId) {
+    let orderIdStr = String(orderId);
+    if (manualClosedOrders.includes(orderIdStr)) {
+      manualClosedOrders = manualClosedOrders.filter(id => id !== orderIdStr);
+    } else {
+      manualClosedOrders.push(orderIdStr);
+    }
+    localStorage.setItem('jaguarManualClosedOrders', JSON.stringify(manualClosedOrders));
+    processBacklogData();
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('boardBody');
+    const showClosed = document.getElementById('showClosedSteps').checked;
+    
+    let html = '';
+    let sumActiveSteps = 0;
+    let sumRemainingWIP = 0;
+    let uniqueActiveOrders = new Set();
+
+    processedData.forEach((step, index) => {
+      
+      // ถ้ายอดค้างเป็น 0 และไม่ได้ดูประวัติงานปิด ให้ซ่อนขั้นตอนนี้ไปเลย
+      if (!showClosed && step.active_remaining_total <= 0) return;
+
+      let visibleOrders = step.orders.filter(o => showClosed || !o.is_closed);
+      if (visibleOrders.length === 0) return; 
+
+      if (step.active_remaining_total > 0) {
+        sumActiveSteps++;
+      }
+      sumRemainingWIP += step.active_remaining_total;
+
+      html += `
+        <tr class="parent-row" onclick="toggleChildRows(${index})" id="parent_${index}">
+          <td>
+            <span class="expand-icon"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="step-col">[ ${step.step_name} ]</span>
+          </td>
+          <td></td>
+          <td class="text-right step-total" style="color: var(--accent-blue);">${step.active_target_total.toLocaleString()}</td>
+          <td class="text-right step-total" style="color: var(--accent-teal);">${step.active_produced_total.toLocaleString()}</td>
+          <td class="text-right step-total" style="color: var(--accent-amber); font-weight: 900;">${step.active_remaining_total.toLocaleString()}</td>
+          <td class="text-center" style="color: var(--text-muted); font-size: 12px;">
+             ${step.active_orders_count > 0 ? `รอผลิต ${step.active_orders_count} รายการ` : '<i class="fa-solid fa-check"></i> ไม่มีค้าง'}
+          </td>
+          <td></td>
+        </tr>
+      `;
+
+      visibleOrders.forEach(order => {
+        if (!order.is_closed) { uniqueActiveOrders.add(order.id_order); }
+
+        let badgeHtml = '';
+        if (order.is_closed) {
+          if (order.close_type === 'MANUAL') badgeHtml = `<span class="badge badge-closed"><i class="fa-solid fa-lock"></i> CLOSED</span>`;
+          else badgeHtml = `<span class="badge badge-auto"><i class="fa-solid fa-robot"></i> AUTO</span>`;
+        } else {
+          if (order.days_remaining !== null) {
+            if (order.days_remaining > 0) {
+              badgeHtml = `<span class="badge badge-ok">เหลือ ${order.days_remaining} วัน</span>`;
+            } else if (order.days_remaining < 0) {
+              badgeHtml = `<span class="badge badge-overdue">เลยกำหนด ${Math.abs(order.days_remaining)} วัน</span>`;
+            } else {
+              badgeHtml = `<span class="badge badge-today">ครบกำหนดวันนี้</span>`;
+            }
+          } else {
+            badgeHtml = `<span class="badge badge-none">รอลงแผน</span>`;
+          }
+        }
+
+        let remainingDisplay = order.is_closed ? `<s>${order.remaining.toLocaleString()}</s>` : order.remaining.toLocaleString();
+        let isChecked = manualClosedOrders.includes(String(order.id_order)) ? 'checked' : '';
+        let rowClass = order.is_closed ? `child-row child-of-${index} closed-row` : `child-row child-of-${index}`;
+
+        html += `
+          <tr class="${rowClass}">
+            <td class="nowrap-col" style="padding-left: 38px;">
+              <input type="checkbox" class="close-checkbox no-print" title="ติ๊กเพื่อปิด/ซ่อน ใบสั่งนี้ทุกขั้นตอน" 
+                     ${isChecked} onchange="toggleOrderManualClose('${order.id_order}')">
+              <span style="color:var(--accent-blue)">${order.order_no}</span> 
+              <span style="color:var(--text-muted); margin-left: 6px;">(${order.work_code})</span>
+            </td>
+            <td class="text-center" style="color: var(--accent-pink); font-weight: bold;">${order.due_date_display}</td>
+            <td class="text-right">${order.target_qty.toLocaleString()}</td>
+            <td class="text-right" style="color: var(--text-main);">${order.produced.toLocaleString()} <span style="font-size:10px; color:var(--text-muted)">(${order.progress_pct.toFixed(0)}%)</span></td>
+            <td class="text-right" style="color: ${order.is_closed ? 'var(--text-muted)' : 'var(--accent-amber)'}; font-weight: bold;">
+              ${remainingDisplay}
+            </td>
+            <td class="text-center">${order.last_update}</td>
+            <td class="text-center">${badgeHtml}</td>
+          </tr>
+        `;
+      });
+    });
+
+    if (html === '') {
+      html = '<tr><td colspan="7" class="loading-msg" style="color:var(--text-muted)">ไม่มีข้อมูลค้างผลิต</td></tr>';
+    }
+
+    tbody.innerHTML = html;
+    
+    document.getElementById('sumActiveSteps').innerText = sumActiveSteps.toLocaleString();
+    document.getElementById('sumActiveOrders').innerText = uniqueActiveOrders.size.toLocaleString(); 
+    document.getElementById('sumRemainingWIP').innerText = sumRemainingWIP.toLocaleString();
+    document.getElementById('printTotalRemaining').innerText = sumRemainingWIP.toLocaleString();
+  }
+
+  function toggleChildRows(index) {
+    const parentRow = document.getElementById(`parent_${index}`);
+    const childRows = document.querySelectorAll(`.child-of-${index}`);
+    parentRow.classList.toggle('expanded');
+    childRows.forEach(row => { row.classList.toggle('show'); });
+  }
+
+  function exportToExcel() {
+    let tableClone = document.getElementById("wipTable").cloneNode(true);
+    tableClone.querySelectorAll('.child-row').forEach(el => el.style.display = 'table-row');
+    tableClone.querySelectorAll('.no-print, input[type="checkbox"], .expand-icon').forEach(el => el.remove());
+
+    let html = tableClone.outerHTML;
+    let blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `WIP_Backlog_Report_${new Date().toISOString().slice(0,10)}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function prepareAndPrint() {
+    window.print();
+  }
+</script>
+
+</body>
+</html>
