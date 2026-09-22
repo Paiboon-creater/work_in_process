@@ -51,20 +51,14 @@
       color: var(--accent-teal);
       font-family: 'Sarabun', sans-serif;
       font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 8px;
     }
     .dept-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;
     }
     .dept-summary-item {
-      background: rgba(0, 0, 0, 0.25);
-      border-left: 4px solid var(--accent-blue);
-      padding: 10px 14px;
-      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.25); border-left: 4px solid var(--accent-blue);
+      padding: 10px 14px; border-radius: 6px;
     }
     .dept-summary-item.has-overdue { border-left-color: #ef4444; }
     .dept-name { font-weight: bold; font-size: 15px; color: #fff; font-family: 'Sarabun', sans-serif; }
@@ -76,8 +70,7 @@
       background: var(--panel-bg); border: 1px solid var(--border-dark);
       padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;
       display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 15px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
     .summary-inline { font-size: 14px; font-weight: bold; }
     .summary-inline .hl { color: var(--accent-blue); margin: 0 10px; }
@@ -129,7 +122,7 @@
     .closed-row td { opacity: 0.5; }
     .closed-row td s { color: var(--text-muted); }
 
-    /* BADGES */
+    /* BADGES & LINKS */
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; white-space: nowrap; display: inline-block; }
     .badge-closed { background: rgba(225, 78, 202, 0.15); color: var(--accent-pink); border: 1px solid var(--accent-pink); }
     .badge-auto { background: rgba(255, 138, 118, 0.15); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
@@ -138,20 +131,39 @@
     .badge-today { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
     .badge-none { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid #3b82f6; }
 
+    .order-link {
+      color: var(--accent-blue); cursor: pointer; text-decoration: underline; font-weight: bold; transition: 0.2s;
+    }
+    .order-link:hover { color: var(--accent-teal); }
+
     .loading-msg { text-align: center; padding: 40px; color: var(--accent-amber); letter-spacing: 2px; }
 
-    /* MODAL MANUAL */
+    /* MODAL OVERLAY */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
-      padding: 20px; box-sizing: border-box;
+      padding: 20px; box-sizing: border-box; backdrop-filter: blur(3px);
     }
     .modal-content {
       background: #fff; color: #333; width: 100%; max-width: 900px; max-height: 90vh;
       border-radius: 10px; overflow-y: auto; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
       position: relative; font-family: 'Sarabun', sans-serif;
     }
-    .modal-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: #666; }
+    
+    /* TICKET PREVIEW UI */
+    .ticket-content {
+      background: #fdfdfd; color: #000; width: 100%; max-width: 600px; max-height: 90vh;
+      border-radius: 8px; overflow-y: auto; padding: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative; font-family: 'Courier New', Courier, monospace; border: 1px solid #ccc;
+    }
+    .ticket-header {
+      text-align: center; border-bottom: 2px dashed #333; padding: 20px; background: #fff;
+    }
+    .ticket-body { padding: 20px 25px; background: #fff; }
+    .ticket-table { width: 100%; border-collapse: collapse; margin-top: 15px; color: #000; }
+    .ticket-table th, .ticket-table td { border: 1px solid #333; padding: 8px; font-size: 13px; text-align: left; }
+    .ticket-table th { background: #eee; text-align: center;}
+    .modal-close { position: absolute; top: 15px; right: 20px; background: transparent; border: none; font-size: 28px; cursor: pointer; color: #999; z-index: 10;}
     .modal-close:hover { color: #000; }
 
     /* PRINT STYLES */
@@ -184,17 +196,14 @@
   <div class="app-header no-print">
     <div>
       <h1 class="app-title"><i class="fa-solid fa-layer-group"></i> PRODUCTION WIP & BACKLOG BOARD</h1>
-      <div class="app-subtitle">กระดานแสดงรายการค้างผลิตทุกแผนก (แสดงผลครบถ้วน ไม่ต้องยุบ/ขยาย)</div>
+      <div class="app-subtitle">กระดานแสดงรายการค้างผลิตทุกแผนก (คลิกที่เลขที่ใบสั่งเพื่อดูใบมิเตอร์งาน)</div>
     </div>
     <div id="statusText" style="color: var(--accent-teal); font-size: 12px; font-weight: bold;">[ SYSTEM: STANDBY ]</div>
   </div>
 
-  <!-- รายงานสรุปสำหรับใช้ประชุม (Meeting Briefing Card) -->
   <div class="meeting-summary-card no-print" id="meetingSummaryCard">
     <h3><i class="fa-solid fa-bullhorn"></i> สรุปประเด็นสำคัญสำหรับใช้ประชุม (Executive Briefing)</h3>
-    <div class="dept-summary-grid" id="deptSummaryGrid">
-      <!-- จะถูกเติมข้อมูลด้วย JavaScript -->
-    </div>
+    <div class="dept-summary-grid" id="deptSummaryGrid"></div>
   </div>
 
   <div class="toolbar no-print">
@@ -245,10 +254,19 @@
       <h2><i class="fa-solid fa-book"></i> คู่มือการใช้งานระบบ</h2>
       <p>หน้ารวมรายการค้างผลิตทั้งหมด ถูกออกแบบให้แสดงผลแบบยาวต่อเนื่อง เพื่อความสะดวกในการเลื่อนดูภาพรวมทุกแผนกพร้อมกันได้ทันที</p>
       <ul>
-        <li><strong>รายงานสรุปสำหรับประชุม (กล่องสีเขียว/ฟ้าด้านบน):</strong> สรุปยอดรวมและจำนวนรายการที่เลยกำหนดของแต่ละแผนก เพื่อให้คุณไพบูลย์ใช้พูดสรุปในที่ประชุมได้อย่างรวดเร็ว</li>
+        <li><strong>รายงานสรุปสำหรับประชุม (กล่องสีเขียว/ฟ้าด้านบน):</strong> สรุปยอดรวมและจำนวนรายการที่เลยกำหนดของแต่ละแผนก เพื่อให้ใช้พูดสรุปในที่ประชุมได้อย่างรวดเร็ว</li>
+        <li><strong>ดูใบมิเตอร์งาน:</strong> สามารถคลิกที่ <u>ตัวหนังสือสีฟ้า (เลขที่ใบสั่ง)</u> เพื่อเปิดดูใบมิเตอร์งานและเส้นทางการผลิตทั้งหมดของใบสั่งนั้นๆ ได้ทันที</li>
         <li><strong>การซ่อนออเดอร์:</strong> ติ๊กถูกที่ช่องสี่เหลี่ยมหน้าเลขที่ใบสั่งเพื่อซ่อนงานที่เสร็จแล้ว</li>
       </ul>
     </div>
+  </div>
+</div>
+
+<!-- Modal Ticket Preview -->
+<div class="modal-overlay" id="ticketModal">
+  <div class="ticket-content">
+    <button class="modal-close" onclick="closeTicket()">&times;</button>
+    <div id="ticketContainer"></div>
   </div>
 </div>
 
@@ -272,11 +290,16 @@
     await fetchAndCalculate();
   };
 
+  // --- Modal Controls ---
   function openManual() { document.getElementById('manualModal').style.display = 'flex'; }
   function closeManual() { document.getElementById('manualModal').style.display = 'none'; }
+  function closeTicket() { document.getElementById('ticketModal').style.display = 'none'; }
+  
   window.onclick = function(event) {
-    let modal = document.getElementById('manualModal');
-    if (event.target == modal) modal.style.display = "none";
+    let mManual = document.getElementById('manualModal');
+    let mTicket = document.getElementById('ticketModal');
+    if (event.target == mManual) mManual.style.display = "none";
+    if (event.target == mTicket) mTicket.style.display = "none";
   }
 
   async function fetchAndCalculate() {
@@ -451,6 +474,107 @@
     });
   }
 
+  // --- TICKET PREVIEW FUNCTION ---
+  function previewTicket(orderId) {
+    let order = db.orders.find(o => String(o.id_order) === String(orderId));
+    if (!order) return;
+
+    let workObj = db.workItems.find(w => String(w.id_work) === String(order.id_work));
+    let workCode = workObj ? workObj.work_code : '-';
+    let targetQty = parseInt(order.quantity) || 0;
+
+    let dueDateStr = "-";
+    if (order.end_date) {
+      let d = new Date(order.end_date);
+      dueDateStr = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+    }
+
+    // หารายการขั้นตอนที่เชื่อมกับชิ้นงานนี้
+    let targets = db.targets.filter(t => String(t.id_work) === String(order.id_work));
+    
+    let stepsHtml = '';
+    targets.forEach(t => {
+      let stepObj = db.steps.find(s => String(s.id_step) === String(t.id_step));
+      let stepName = stepObj ? stepObj.step_name : 'N/A';
+      
+      let produced = 0;
+      db.production.forEach(p => {
+        if (String(p.id_order) === String(orderId) && String(p.id_target) === String(t.id_target)) {
+          produced += (p.produced_amount || 0);
+        }
+      });
+      
+      let remaining = targetQty - produced;
+      let statusHtml = '';
+      if (produced >= targetQty) {
+        statusHtml = '<span style="color: #10b981; font-weight:bold;">✔ COMPLETE</span>';
+      } else if (produced > 0) {
+        statusHtml = '<span style="color: #f59e0b; font-weight:bold;">⚙ WIP</span>';
+      } else {
+        statusHtml = '<span style="color: #ef4444;">⏳ PENDING</span>';
+      }
+
+      stepsHtml += `
+        <tr>
+          <td><b>${stepName}</b></td>
+          <td class="text-right">${produced.toLocaleString()}</td>
+          <td class="text-right">${remaining > 0 ? remaining.toLocaleString() : 0}</td>
+          <td class="text-center">${statusHtml}</td>
+        </tr>
+      `;
+    });
+
+    let ticketHtml = `
+      <div class="ticket-header">
+        <h2 style="margin:0; font-weight:bold; letter-spacing: 2px;">JAGUAR METER TICKET</h2>
+        <div style="font-size:28px; margin-top:10px; font-weight:bold;">*${order.order_no}*</div>
+        <div style="font-size:12px; color:#666; margin-top:5px; font-family:'Sarabun', sans-serif;">ใบติดตามเส้นทางการผลิต (Routing Slip)</div>
+      </div>
+      <div class="ticket-body">
+        <table style="width:100%; border:none; margin-bottom: 20px; font-size: 15px;">
+          <tr>
+            <td width="30%" style="padding: 4px 0;"><strong>ORDER NO:</strong></td>
+            <td style="color: #1d8cf8; font-weight: bold; font-size: 18px;">${order.order_no}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>WORK CODE:</strong></td>
+            <td style="font-weight: bold;">${workCode}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>TARGET QTY:</strong></td>
+            <td style="font-weight: bold; color: #e14eca;">${targetQty.toLocaleString()} PCS</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>DUE DATE:</strong></td>
+            <td style="font-weight: bold; color: #f59e0b;">${dueDateStr}</td>
+          </tr>
+        </table>
+        
+        <div style="font-family:'Sarabun', sans-serif; font-weight:bold; margin-bottom: 8px;">เส้นทางการผลิต (Routing):</div>
+        <table class="ticket-table">
+          <thead>
+            <tr>
+              <th width="35%">ขั้นตอน (Process)</th>
+              <th width="20%">ผลิตแล้ว (ดี)</th>
+              <th width="20%">ยอดค้าง (WIP)</th>
+              <th width="25%">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stepsHtml || '<tr><td colspan="4" class="text-center">ไม่มีข้อมูลขั้นตอน</td></tr>'}
+          </tbody>
+        </table>
+        <div style="margin-top:30px; text-align:center; font-size:11px; color:#999; border-top: 1px dashed #ccc; padding-top: 15px;">
+          Printed from JAGUAR PRODUCTION SYSTEM<br>
+          ${new Date().toLocaleString('th-TH')}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('ticketContainer').innerHTML = ticketHtml;
+    document.getElementById('ticketModal').style.display = 'flex';
+  }
+
   async function toggleOrderManualClose(checkboxElement, orderId, currentStatus) {
     checkboxElement.disabled = true;
     const newStatus = !currentStatus;
@@ -509,7 +633,7 @@
         </div>
       `;
 
-      // แถวหัวข้อแผนก (แสดงผลทันที ไม่ต้องกดคลิกยุบ/ขยาย)
+      // แถวหัวข้อแผนก
       html += `
         <tr class="step-header-row">
           <td colspan="5">
@@ -523,7 +647,7 @@
         </tr>
       `;
 
-      // แถวรายการย่อย (แสดงผลทั้งหมด)
+      // แถวรายการย่อย
       visibleOrders.forEach(order => {
         if (!order.is_closed) uniqueActiveOrders.add(order.id_order);
 
@@ -544,12 +668,15 @@
         let isChecked = order.is_manual_closed ? 'checked' : '';
         let rowClass = order.is_closed ? `item-row closed-row` : `item-row`;
 
+        // เปลี่ยนตัวหนังสือสีฟ้าเป็นลิงก์ order-link เพื่อกดเรียกพรีวิว
         html += `
           <tr class="${rowClass}">
             <td class="nowrap-col" style="padding-left: 25px;">
               <input type="checkbox" class="close-checkbox no-print" title="ติ๊กเพื่อซ่อนใบสั่งนี้" 
                      ${isChecked} onchange="toggleOrderManualClose(this, '${order.id_order}', ${order.is_manual_closed})">
-              <span style="color:var(--accent-blue)">${order.order_no}</span> 
+              
+              <a class="order-link" onclick="previewTicket('${order.id_order}')" title="คลิกดูใบมิเตอร์งาน">${order.order_no}</a> 
+              
               <span style="color:var(--text-muted); margin-left: 6px;">(${order.work_code})</span>
             </td>
             <td class="text-center" style="color: var(--accent-pink); font-size: 13px;">${order.order_due_date_display}</td>
